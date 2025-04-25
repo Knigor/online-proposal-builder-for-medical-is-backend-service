@@ -37,9 +37,16 @@ class Product
     #[ORM\OneToMany(targetEntity: PriceList::class, mappedBy: 'product')]
     private Collection $priceLists;
 
+    /**
+     * @var Collection<int, CommercialOffersItems>
+     */
+    #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'productId')]
+    private Collection $commercialOffersItems;
+
     public function __construct()
     {
         $this->priceLists = new ArrayCollection();
+        $this->commercialOffersItems = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -131,6 +138,36 @@ class Product
             // set the owning side to null (unless already changed)
             if ($priceList->getProduct() === $this) {
                 $priceList->setProduct(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CommercialOffersItems>
+     */
+    public function getCommercialOffersItems(): Collection
+    {
+        return $this->commercialOffersItems;
+    }
+
+    public function addCommercialOffersItem(CommercialOffersItems $commercialOffersItem): static
+    {
+        if (!$this->commercialOffersItems->contains($commercialOffersItem)) {
+            $this->commercialOffersItems->add($commercialOffersItem);
+            $commercialOffersItem->setProductId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommercialOffersItem(CommercialOffersItems $commercialOffersItem): static
+    {
+        if ($this->commercialOffersItems->removeElement($commercialOffersItem)) {
+            // set the owning side to null (unless already changed)
+            if ($commercialOffersItem->getProductId() === $this) {
+                $commercialOffersItem->setProductId(null);
             }
         }
 

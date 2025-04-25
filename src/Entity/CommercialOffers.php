@@ -21,8 +21,7 @@ class CommercialOffers
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'commercialOffers')]
     private Collection $userId;
 
-    #[ORM\Column]
-    private array $selectedProducts = [];
+
 
     #[ORM\Column]
     private ?bool $status = null;
@@ -42,10 +41,17 @@ class CommercialOffers
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $acceptedAt = null;
 
+    /**
+     * @var Collection<int, CommercialOffersItems>
+     */
+    #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'commercialOfferId', orphanRemoval: true)]
+    private Collection $commercialOffersItems;
+
     public function __construct()
     {
         $this->userId = new ArrayCollection();
         $this->documents = new ArrayCollection();
+        $this->commercialOffersItems = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -73,18 +79,6 @@ class CommercialOffers
     public function removeUserId(User $userId): static
     {
         $this->userId->removeElement($userId);
-
-        return $this;
-    }
-
-    public function getSelectedProducts(): array
-    {
-        return $this->selectedProducts;
-    }
-
-    public function setSelectedProducts(array $selectedProducts): static
-    {
-        $this->selectedProducts = $selectedProducts;
 
         return $this;
     }
@@ -163,6 +157,36 @@ class CommercialOffers
     public function setAcceptedAt(?\DateTimeImmutable $acceptedAt): static
     {
         $this->acceptedAt = $acceptedAt;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CommercialOffersItems>
+     */
+    public function getCommercialOffersItems(): Collection
+    {
+        return $this->commercialOffersItems;
+    }
+
+    public function addCommercialOffersItem(CommercialOffersItems $commercialOffersItem): static
+    {
+        if (!$this->commercialOffersItems->contains($commercialOffersItem)) {
+            $this->commercialOffersItems->add($commercialOffersItem);
+            $commercialOffersItem->setCommercialOfferId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommercialOffersItem(CommercialOffersItems $commercialOffersItem): static
+    {
+        if ($this->commercialOffersItems->removeElement($commercialOffersItem)) {
+            // set the owning side to null (unless already changed)
+            if ($commercialOffersItem->getCommercialOfferId() === $this) {
+                $commercialOffersItem->setCommercialOfferId(null);
+            }
+        }
 
         return $this;
     }
