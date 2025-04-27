@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Dto;
+
+use Symfony\Component\Validator\Constraints as Assert;
+
+class UserDto
+{
+    #[Assert\NotBlank]
+    #[Assert\Email]
+    public string $email;
+
+    #[Assert\NotBlank]
+    public string $password;
+
+    #[Assert\NotBlank]
+    public string $fullName;
+
+    #[Assert\NotBlank]
+    public string $userName;
+
+    public array $roles = ['ROLE_USER'];
+}

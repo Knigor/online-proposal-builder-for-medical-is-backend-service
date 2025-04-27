@@ -6,10 +6,13 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-class User
+#[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -28,8 +31,11 @@ class User
     #[ORM\Column(length: 255)]
     private ?string $hashPassword = null;
 
-    #[ORM\Column(length: 100)]
-    private ?string $role = null;
+    /**
+     * @var list<string> The user roles
+     */
+    #[ORM\Column]
+    private array $roles = [];
 
     /**
      * @var Collection<int, Product>
@@ -47,6 +53,7 @@ class User
     {
         $this->nameProduct = new ArrayCollection();
         $this->commercialOffers = new ArrayCollection();
+        $this->roles = ['ROLE_USER'];
     }
 
     public function getId(): ?int
@@ -102,16 +109,36 @@ class User
         return $this;
     }
 
-    public function getRole(): ?string
+    public function getRoles(): array
     {
-        return $this->role;
+        $roles = $this->roles;
+        // гарантируем, что всегда будет хотя бы ROLE_USER
+        if (!in_array('ROLE_USER', $roles)) {
+            $roles[] = 'ROLE_USER';
+        }
+        return array_unique($roles);
     }
 
-    public function setRole(string $role): static
+    public function setRoles(array $roles): static
     {
-        $this->role = $role;
+        $this->roles = $roles;
 
         return $this;
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->hashPassword;
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->email;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // Очистка временных данных, если они есть
     }
 
     /**
@@ -135,7 +162,6 @@ class User
     public function removeNameProduct(Product $nameProduct): static
     {
         if ($this->nameProduct->removeElement($nameProduct)) {
-            // set the owning side to null (unless already changed)
             if ($nameProduct->getUserId() === $this) {
                 $nameProduct->setUserId(null);
             }
