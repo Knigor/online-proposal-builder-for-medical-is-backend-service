@@ -6,29 +6,35 @@ use App\Repository\ProductRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-
+use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['product:read', 'product:write'])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'nameProduct')]
+    #[ORM\ManyToOne(inversedBy: 'products')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['product:read', 'product:write'])]
     private ?User $userId = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['product:read', 'product:write'])]
     private ?string $nameProduct = null;
 
     #[ORM\Column(length: 1000)]
+    #[Groups(['product:read', 'product:write'])]
     private ?string $discriptionProduct = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['product:read', 'product:write'])]
     private ?bool $isActive = null;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['product:read', 'product:write'])]
     private ?string $typeProduct = null;
 
     /**

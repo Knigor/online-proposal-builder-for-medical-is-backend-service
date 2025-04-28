@@ -44,7 +44,7 @@ class CommercialOffers
     /**
      * @var Collection<int, CommercialOffersItems>
      */
-    #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'commercialOfferId', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'commercialOfferId',cascade: ['persist'], orphanRemoval: true)]
     private Collection $commercialOffersItems;
 
     public function __construct()

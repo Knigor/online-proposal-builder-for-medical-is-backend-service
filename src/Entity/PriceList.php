@@ -23,6 +23,9 @@ class PriceList
     #[ORM\Column]
     private ?int $discountPercent = null;
 
+    #[ORM\Column]
+    private ?int $quantity = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -60,6 +63,18 @@ class PriceList
     public function setDiscountPercent(int $discountPercent): static
     {
         $this->discountPercent = $discountPercent;
+
+        return $this;
+    }
+
+    public function getQuantity(): ?int
+    {
+        return $this->quantity;
+    }
+
+    public function setQuantity(int $quantity): static
+    {
+        $this->quantity = $quantity;
 
         return $this;
     }

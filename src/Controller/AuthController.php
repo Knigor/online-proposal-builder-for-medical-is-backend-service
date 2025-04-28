@@ -53,10 +53,11 @@ class AuthController extends AbstractController
             ], Response::HTTP_UNAUTHORIZED);
         }
 
+
         $accessToken = $jwtManager->create($user);
 
         $refreshPayload = [
-            'username' => $user->getEmail(),
+            'username' => $user->getUserIdentifier(),
             'exp' => time() + 60 * 60 * 24 * 7
         ];
         $refreshToken = base64_encode(json_encode($refreshPayload));
@@ -74,6 +75,8 @@ class AuthController extends AbstractController
             'user' => [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
+                'name' => $user->getFullName(),
+                'username' => $user->getUserIdentifier(),
                 'role' => $user->getRoles(),
             ]
         ]);

@@ -13,10 +13,8 @@ class UserDto
     #[Assert\NotBlank]
     public string $password;
 
-    #[Assert\NotBlank]
     public string $fullName;
 
-    #[Assert\NotBlank]
     public string $userName;
 
     public array $roles = ['ROLE_USER'];
