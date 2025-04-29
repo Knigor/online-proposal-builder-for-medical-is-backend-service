@@ -4,7 +4,11 @@ namespace App\Controller;
 
 use App\Entity\ManagerLk;
 use App\Entity\User;
+use App\Entity\PriceList;
+use App\Entity\Product;
 use App\Entity\CommercialOffers;
+use App\Repository\ManagerLkRepository;
+use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -69,6 +73,25 @@ class ManagerController extends AbstractController
                 'email_client' => $manager->getEmailClient()
             ];
         }, $managers);
+
+        return $this->json($data);
+    }
+
+    // здесь будет get запрос по информации по КП
+
+    /**
+     * @throws Exception
+     */
+    #[Route('/commercial-offer', name: 'get_commercial_offer', methods: ['GET'])]
+    public function getCommercialOffer(Request $request, ManagerLkRepository $repository): JsonResponse
+    {
+        $commercialId = $request->query->getInt('commercial_id');
+
+        if (!$commercialId) {
+            return new JsonResponse(['error' => 'Missing commercial_id'], 400);
+        }
+
+        $data = $repository->getCommercialOfferDetails($commercialId);
 
         return $this->json($data);
     }
