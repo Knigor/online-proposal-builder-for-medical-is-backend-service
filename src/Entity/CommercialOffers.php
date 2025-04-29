@@ -47,11 +47,18 @@ class CommercialOffers
     #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'commercialOfferId',cascade: ['persist'], orphanRemoval: true)]
     private Collection $commercialOffersItems;
 
+    /**
+     * @var Collection<int, ManagerLk>
+     */
+    #[ORM\OneToMany(targetEntity: ManagerLk::class, mappedBy: 'commercialOffersId')]
+    private Collection $managerLks;
+
     public function __construct()
     {
         $this->userId = new ArrayCollection();
         $this->documents = new ArrayCollection();
         $this->commercialOffersItems = new ArrayCollection();
+        $this->managerLks = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -185,6 +192,36 @@ class CommercialOffers
             // set the owning side to null (unless already changed)
             if ($commercialOffersItem->getCommercialOfferId() === $this) {
                 $commercialOffersItem->setCommercialOfferId(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ManagerLk>
+     */
+    public function getManagerLks(): Collection
+    {
+        return $this->managerLks;
+    }
+
+    public function addManagerLk(ManagerLk $managerLk): static
+    {
+        if (!$this->managerLks->contains($managerLk)) {
+            $this->managerLks->add($managerLk);
+            $managerLk->setCommercialOffersId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeManagerLk(ManagerLk $managerLk): static
+    {
+        if ($this->managerLks->removeElement($managerLk)) {
+            // set the owning side to null (unless already changed)
+            if ($managerLk->getCommercialOffersId() === $this) {
+                $managerLk->setCommercialOffersId(null);
             }
         }
 
