@@ -8,6 +8,7 @@ use App\Entity\CommercialOffersItems;
 use App\Entity\PriceList;
 use App\Entity\Product;
 use App\Entity\User;
+use App\Entity\ManagerLk;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +25,6 @@ class CommercialOffersController extends AbstractController
     }
 
     // Добавление коммерческого предложения
-// Добавление коммерческого предложения
     #[Route('/api/commercial-offer/add', name: 'add_commercial_offer', methods: ['POST'])]
     public function addCommercialOffer(Request $request): JsonResponse
     {
@@ -43,7 +43,7 @@ class CommercialOffersController extends AbstractController
         $commercialOffer = new CommercialOffers();
         $commercialOffer->setStatus($data['status'] ?? false);
         $commercialOffer->setCreatedAt(new \DateTimeImmutable());
-        $commercialOffer->setTotalPrice($data['total_price']);
+
 
         // Добавляем пользователя
         $user = $this->em->getRepository(User::class)->find($data['user_id']);
@@ -60,14 +60,20 @@ class CommercialOffersController extends AbstractController
                 return $this->json(['message' => 'Product not found'], 404);
             }
 
-            // Получаем цену и скидку из PriceList
             $priceList = $this->em->getRepository(PriceList::class)->findOneBy(['product' => $product]);
             if (!$priceList) {
                 return $this->json(['message' => 'Price not found for the product'], 404);
             }
 
+            $quantity = $productData['quantity'] ?? 1;
 
-            // Создаем элемент коммерческого предложения
+            $price = $priceList->getPrice();
+            $discount = $priceList->getDiscountPercent(); // например, 10 = 10%
+            $priceAfterDiscount = $price * (1 - $discount / 100);
+            $itemTotal = $priceAfterDiscount * $quantity;
+
+            $totalPrice += $itemTotal;
+
             $commercialOfferItem = new CommercialOffersItems();
             $commercialOfferItem->setProductId($product);
             $commercialOffer->addCommercialOffersItem($commercialOfferItem);
@@ -113,9 +119,14 @@ class CommercialOffersController extends AbstractController
                 ];
             }
 
+
+            $managerLk = $this->em->getRepository(ManagerLk::class)->findOneBy(['commercialOffersId' => $offer->getId()]);
+            $statusManager = $managerLk ? $managerLk->getStatus() : null;
+
             $data[] = [
                 'id' => $offer->getId(),
                 'status' => $offer->isStatus(),
+                'status_manager' => $statusManager,
                 'created_at' => $offer->getCreatedAt()->format('Y-m-d H:i:s'),
                 'total_price' => $offer->getTotalPrice(),
                 'products' => $items,
