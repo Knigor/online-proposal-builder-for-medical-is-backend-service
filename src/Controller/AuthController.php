@@ -150,6 +150,8 @@ class AuthController extends AbstractController
             'user' => [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
+                'name' => $user->getFullName(),
+                'username' => $user->getUserIdentifier(),
                 'role' => $user->getRoles()
             ]
         ], Response::HTTP_CREATED);
@@ -164,8 +166,10 @@ class AuthController extends AbstractController
         EntityManagerInterface $em,
         JWTTokenManagerInterface $jwtManager
     ): JsonResponse {
+
         $refreshToken = $request->cookies->get('refresh_token');
 
+      //  dd($request->cookies->all());
         if (!$refreshToken) {
             return new JsonResponse([
                 'error' => 'Missing refresh token'
@@ -180,7 +184,7 @@ class AuthController extends AbstractController
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $user = $em->getRepository(User::class)->findOneBy(['email' => $refreshPayload['username'] ?? null]);
+        $user = $em->getRepository(User::class)->findOneBy(['username' => $refreshPayload['username'] ?? null]);
 
         if (!$user) {
             return new JsonResponse([
@@ -195,6 +199,8 @@ class AuthController extends AbstractController
             'user' => [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
+                'name' => $user->getFullName(),
+                'username' => $user->getUserIdentifier(),
                 'role' => $user->getRoles()
             ]
         ]);
