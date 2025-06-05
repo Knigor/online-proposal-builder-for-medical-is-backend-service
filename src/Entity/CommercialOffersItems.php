@@ -17,9 +17,9 @@ class CommercialOffersItems
     #[ORM\JoinColumn(nullable: false)]
     private ?CommercialOffers $commercialOfferId = null;
 
-    #[ORM\ManyToOne(inversedBy: 'commercialOffersItems')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Product $productId = null;
+    #[ORM\ManyToOne(inversedBy: 'commercialOffersItem')]
+    private ?Product $product = null;
+
 
 
     public function getId(): ?int
@@ -39,16 +39,17 @@ class CommercialOffersItems
         return $this;
     }
 
-    public function getProductId(): ?Product
+    public function getProduct(): ?Product
     {
-        return $this->productId;
+        return $this->product;
     }
 
-    public function setProductId(?Product $productId): static
+    public function setProduct(?Product $product): static
     {
-        $this->productId = $productId;
+        $this->product = $product;
 
         return $this;
     }
+
 
 }

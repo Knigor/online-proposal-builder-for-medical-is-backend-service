@@ -29,11 +29,6 @@ class CommercialOffers
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    /**
-     * @var Collection<int, Document>
-     */
-    #[ORM\OneToMany(targetEntity: Document::class, mappedBy: 'commercialOffer')]
-    private Collection $documents;
 
     #[ORM\Column]
     private ?int $totalPrice = null;
@@ -56,7 +51,6 @@ class CommercialOffers
     public function __construct()
     {
         $this->userId = new ArrayCollection();
-        $this->documents = new ArrayCollection();
         $this->commercialOffersItems = new ArrayCollection();
         $this->managerLks = new ArrayCollection();
     }
@@ -114,35 +108,7 @@ class CommercialOffers
         return $this;
     }
 
-    /**
-     * @return Collection<int, Document>
-     */
-    public function getDocuments(): Collection
-    {
-        return $this->documents;
-    }
 
-    public function addDocument(Document $document): static
-    {
-        if (!$this->documents->contains($document)) {
-            $this->documents->add($document);
-            $document->setCommercialOffer($this);
-        }
-
-        return $this;
-    }
-
-    public function removeDocument(Document $document): static
-    {
-        if ($this->documents->removeElement($document)) {
-            // set the owning side to null (unless already changed)
-            if ($document->getCommercialOffer() === $this) {
-                $document->setCommercialOffer(null);
-            }
-        }
-
-        return $this;
-    }
 
     public function getTotalPrice(): ?int
     {

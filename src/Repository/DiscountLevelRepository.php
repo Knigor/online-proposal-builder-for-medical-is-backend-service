@@ -2,39 +2,39 @@
 
 namespace App\Repository;
 
-use App\Entity\PriceList;
+use App\Entity\DiscountLevel;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<PriceList>
+ * @extends ServiceEntityRepository<DiscountLevel>
  */
-class PriceListRepository extends ServiceEntityRepository
+class DiscountLevelRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, PriceList::class);
+        parent::__construct($registry, DiscountLevel::class);
     }
 
     //    /**
-    //     * @return PriceList[] Returns an array of PriceList objects
+    //     * @return DiscountLevel[] Returns an array of DiscountLevel objects
     //     */
     //    public function findByExampleField($value): array
     //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
+    //        return $this->createQueryBuilder('d')
+    //            ->andWhere('d.exampleField = :val')
     //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
+    //            ->orderBy('d.id', 'ASC')
     //            ->setMaxResults(10)
     //            ->getQuery()
     //            ->getResult()
     //        ;
     //    }
 
-    //    public function findOneBySomeField($value): ?PriceList
+    //    public function findOneBySomeField($value): ?DiscountLevel
     //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
+    //        return $this->createQueryBuilder('d')
+    //            ->andWhere('d.exampleField = :val')
     //            ->setParameter('val', $value)
     //            ->getQuery()
     //            ->getOneOrNullResult()

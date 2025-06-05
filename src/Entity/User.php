@@ -41,11 +41,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private array $roles = [];
 
-    /**
-     * @var Collection<int, Product>
-     */
-    #[ORM\OneToMany(targetEntity: Product::class, mappedBy: 'userId')]
-    private Collection $nameProduct;
 
     /**
      * @var Collection<int, CommercialOffers>
@@ -59,12 +54,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: ManagerLk::class, mappedBy: 'userId')]
     private Collection $managerLks;
 
+    /**
+     * @var Collection<int, Product>
+     */
+    #[ORM\OneToMany(targetEntity: Product::class, mappedBy: 'userProduct')]
+    private Collection $products;
+
     public function __construct()
     {
-        $this->nameProduct = new ArrayCollection();
         $this->commercialOffers = new ArrayCollection();
         $this->roles = ['ROLE_USER'];
         $this->managerLks = new ArrayCollection();
+        $this->products = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -153,34 +154,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // Очистка временных данных, если они есть
     }
 
-    /**
-     * @return Collection<int, Product>
-     */
-    public function getNameProduct(): Collection
-    {
-        return $this->nameProduct;
-    }
 
-    public function addNameProduct(Product $nameProduct): static
-    {
-        if (!$this->nameProduct->contains($nameProduct)) {
-            $this->nameProduct->add($nameProduct);
-            $nameProduct->setUserId($this);
-        }
 
-        return $this;
-    }
 
-    public function removeNameProduct(Product $nameProduct): static
-    {
-        if ($this->nameProduct->removeElement($nameProduct)) {
-            if ($nameProduct->getUserId() === $this) {
-                $nameProduct->setUserId(null);
-            }
-        }
-
-        return $this;
-    }
 
     /**
      * @return Collection<int, CommercialOffers>
@@ -233,6 +209,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($managerLk->getUserId() === $this) {
                 $managerLk->setUserId(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Product>
+     */
+    public function getProducts(): Collection
+    {
+        return $this->products;
+    }
+
+    public function addProduct(Product $product): static
+    {
+        if (!$this->products->contains($product)) {
+            $this->products->add($product);
+            $product->setUserProduct($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProduct(Product $product): static
+    {
+        if ($this->products->removeElement($product)) {
+            // set the owning side to null (unless already changed)
+            if ($product->getUserProduct() === $this) {
+                $product->setUserProduct(null);
             }
         }
 
