@@ -62,6 +62,26 @@ class ProductController extends AbstractController
         return new JsonResponse($data, 201, [], true); // Передаем строку JSON
     }
 
+    #[Route('/names', name: 'product_names', methods: ['GET'])]
+    public function getProductNames(ProductRepository $productRepository): JsonResponse
+    {
+        $products = $productRepository->createQueryBuilder('p')
+            ->select('p.id, p.nameProduct')
+            ->getQuery()
+            ->getResult();
+
+        $formattedProducts = array_map(static function($product) {
+            return [
+                'id' => $product['id'],
+                'name' => $product['nameProduct']
+            ];
+        }, $products);
+
+        return $this->json([
+            'product_names' => $formattedProducts
+        ]);
+    }
+
     #[Route('/{id}', name: 'show', methods: ['GET'])]
     public function show(Product $product): JsonResponse
     {
@@ -107,4 +127,6 @@ class ProductController extends AbstractController
         // Возвращаем сообщение об успешном удалении продукта
         return $this->json(['message' => 'Product deleted'], 200);
     }
+
+
 }

@@ -95,13 +95,22 @@ class PriceListController extends AbstractController
             return $this->json(['message' => 'Invalid JSON data'], 400);
         }
 
+
+
+
         // Находим ценовой лист по ID
         $priceList = $this->em->getRepository(PriceList::class)->find($id);
         if (!$priceList) {
             return $this->json(['message' => 'Price list not found'], 404);
         }
 
+
+
         // Обновляем только те поля, которые были переданы
+        if (isset($data['product_id'])) {
+            $priceList->setPrice($data['product_id']);
+        }
+
         if (isset($data['price'])) {
             $priceList->setPrice($data['price']);
         }
