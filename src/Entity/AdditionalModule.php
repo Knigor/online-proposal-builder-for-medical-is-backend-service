@@ -15,27 +15,27 @@ class AdditionalModule
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['module:read', 'module:write'])]
+    #[Groups(['module:read', 'module:write','offer:item:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['module:read', 'module:write'])]
+    #[Groups(['module:read', 'module:write','offer:item:read'])]
     private ?string $nameModule = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['module:read', 'module:write'])]
+    #[Groups(['module:read', 'module:write','offer:item:read'])]
     private ?string $descriptionModule = null;
 
     #[ORM\Column]
-    #[Groups(['module:read', 'module:write'])]
+    #[Groups(['module:read', 'module:write','offer:item:read'])]
     private ?float $offerPrice = null;
 
     #[ORM\Column]
-    #[Groups(['module:read', 'module:write'])]
+    #[Groups(['module:read', 'module:write','offer:item:read'])]
     private ?float $purchasePrice = null;
 
     #[ORM\Column]
-    #[Groups(['module:read', 'module:write'])]
+    #[Groups(['module:read', 'module:write','offer:item:read'])]
     private ?float $maxDiscountPercent = null;
 
     #[ORM\ManyToOne(inversedBy: 'additionalModules')]

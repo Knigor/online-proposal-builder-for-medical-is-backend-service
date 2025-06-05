@@ -18,10 +18,11 @@ class Product
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write', 'offer:item:read'])]
     private ?string $nameProduct = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['offer:item:read'])]
     private ?string $discriptionProduct = null;
 
     /**

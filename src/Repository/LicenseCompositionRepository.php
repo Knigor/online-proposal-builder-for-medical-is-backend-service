@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\BaseLicense;
 use App\Entity\LicenseComposition;
 use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -24,4 +25,17 @@ class LicenseCompositionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function findCompatibleModules(BaseLicense $baseLicense): array
+    {
+        return $this->createQueryBuilder('lc')
+            ->andWhere('lc.baseLicense = :baseLicense')
+            ->andWhere('lc.compatible = true')
+            ->setParameter('baseLicense', $baseLicense)
+            ->join('lc.additionalModule', 'am')
+            ->select('am')
+            ->getQuery()
+            ->getResult();
+    }
+
 }

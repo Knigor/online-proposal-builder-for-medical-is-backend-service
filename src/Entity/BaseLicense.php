@@ -15,35 +15,35 @@ class BaseLicense
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?string $nameLicense = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?string $descriptionLicense = null;
 
     #[ORM\Column]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?float $offerPriceLicense = null;
 
     #[ORM\Column]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?float $purchasePriceLicense = null;
 
     #[ORM\Column]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?float $maxDiscount = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?string $typeLicense = null;
 
     #[ORM\ManyToOne(inversedBy: 'baseLicenses')]
-    #[Groups(['license:read', 'license:write'])]
+    #[Groups(['license:read', 'license:write','offer:item:read'])]
     private ?Product $product = null;
 
     /**

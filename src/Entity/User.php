@@ -48,11 +48,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: CommercialOffers::class, mappedBy: 'userId')]
     private Collection $commercialOffers;
 
-    /**
-     * @var Collection<int, ManagerLk>
-     */
-    #[ORM\OneToMany(targetEntity: ManagerLk::class, mappedBy: 'userId')]
-    private Collection $managerLks;
 
     /**
      * @var Collection<int, Product>
@@ -180,36 +175,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->commercialOffers->removeElement($commercialOffer)) {
             $commercialOffer->removeUserId($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, ManagerLk>
-     */
-    public function getManagerLks(): Collection
-    {
-        return $this->managerLks;
-    }
-
-    public function addManagerLk(ManagerLk $managerLk): static
-    {
-        if (!$this->managerLks->contains($managerLk)) {
-            $this->managerLks->add($managerLk);
-            $managerLk->setUserId($this);
-        }
-
-        return $this;
-    }
-
-    public function removeManagerLk(ManagerLk $managerLk): static
-    {
-        if ($this->managerLks->removeElement($managerLk)) {
-            // set the owning side to null (unless already changed)
-            if ($managerLk->getUserId() === $this) {
-                $managerLk->setUserId(null);
-            }
         }
 
         return $this;
