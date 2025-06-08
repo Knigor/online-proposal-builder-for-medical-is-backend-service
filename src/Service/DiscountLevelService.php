@@ -23,7 +23,6 @@ class DiscountLevelService
         ?int $maxLicenses,
         ?int $minAmount,
         ?int $maxAmount,
-        ?float $discountPercent,
         ?Product $product
     ): DiscountLevel {
         $discountLevel = new DiscountLevel();
@@ -32,7 +31,6 @@ class DiscountLevelService
         $discountLevel->setMaxLicenses($maxLicenses);
         $discountLevel->setMinAmount($minAmount);
         $discountLevel->setMaxAmount($maxAmount);
-        $discountLevel->setDiscountPercent($discountPercent);
         $discountLevel->setProduct($product);
 
         $this->entityManager->persist($discountLevel);

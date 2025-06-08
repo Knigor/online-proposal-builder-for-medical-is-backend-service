@@ -115,7 +115,6 @@ class DiscountLevelController extends AbstractController
         $maxLicenses = $data['max_licenses'] ?? null;
         $minAmount = $data['min_amount'] ?? null;
         $maxAmount = $data['max_amount'] ?? null;
-        $discountPercent = $data['discount_percent'] ?? null;
         $productId = $data['product_id'] ?? null;
 
         if (!$type) {
@@ -130,7 +129,6 @@ class DiscountLevelController extends AbstractController
             $maxLicenses,
             $minAmount,
             $maxAmount,
-            $discountPercent,
             $product
         );
 
@@ -270,10 +268,6 @@ class DiscountLevelController extends AbstractController
             $discountLevel->setMaxAmount($data['max_amount']);
         }
 
-        if (isset($data['discount_percent'])) {
-            $discountLevel->setDiscountPercent($data['discount_percent']);
-        }
-
         if (isset($data['product_id'])) {
             $product = $this->entityManager->getRepository(Product::class)->find($data['product_id']);
             $discountLevel->setProduct($product);
@@ -350,13 +344,9 @@ class DiscountLevelController extends AbstractController
             new OA\Response(response: 401, description: 'JWT Token not found or invalid')
         ]
     )]
-    public function list(DiscountCalculatorService $calculator): JsonResponse
+    public function list(): JsonResponse
     {
-
-
         $discountLevels = $this->discountLevelService->getAllDiscountLevels();
-
-        $levels = $calculator->calculateDiscountForProduct();
 
         $result = [];
         foreach ($discountLevels as $discountLevel) {

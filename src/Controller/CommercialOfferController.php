@@ -182,8 +182,16 @@ class CommercialOfferController extends AbstractController
     public function list(): JsonResponse
     {
         $user = $this->getUser();
-        $offers = $this->entityManager->getRepository(CommercialOffers::class)
-            ->findBy(['user' => $user], ['createdAt' => 'DESC']);
+
+        $offers = $this->entityManager->createQueryBuilder()
+            ->select('co')
+            ->from(CommercialOffers::class, 'co')
+            ->innerJoin('co.userId', 'u')
+            ->where('u = :user')
+            ->setParameter('user', $user)
+            ->orderBy('co.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
 
         $result = [];
         foreach ($offers as $offer) {
@@ -193,7 +201,7 @@ class CommercialOfferController extends AbstractController
                 'created_at' => $offer->getCreatedAt()->format('Y-m-d H:i:s'),
                 'total_price' => $offer->getTotalPrice(),
                 'accepted_at' => $offer->getAcceptedAt()?->format('Y-m-d H:i:s'),
-                'items_count' => $offer->getCommercialOffersItems()->count()
+                'items_count' => $offer->getCommercialOffersItems()->count(),
             ];
         }
 

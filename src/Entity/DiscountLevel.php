@@ -29,7 +29,7 @@ class DiscountLevel
     private ?int $maxAmount = null;
 
     #[ORM\Column(nullable: true)]
-    private ?float $discountPercent = null;
+    private ?float $discountPercent = 0;
 
     #[ORM\ManyToOne(inversedBy: 'discountLevels')]
     private ?Product $product = null;

@@ -15,6 +15,7 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['license:read', 'license:write', 'offer:item:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
