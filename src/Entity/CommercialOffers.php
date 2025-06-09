@@ -39,7 +39,7 @@ class CommercialOffers
     /**
      * @var Collection<int, CommercialOffersItems>
      */
-    #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'commercialOfferId',cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'commercialOfferId',cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $commercialOffersItems;
 
 

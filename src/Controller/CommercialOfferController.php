@@ -12,6 +12,7 @@ use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/commercial-offers')]
@@ -53,6 +54,27 @@ class CommercialOfferController extends AbstractController
         ], 201);
     }
 
+    #[Route('/{id}', name: 'commercial_offer_delete', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/commercial-offers/{id}',
+        summary: 'Удалить коммерческое предложение',
+        tags: ['Commercial Offer'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 204, description: 'Коммерческое предложение удалено'),
+            new OA\Response(response: 404, description: 'КП не найдено'),
+            new OA\Response(response: 401, description: 'JWT Token not found or invalid')
+        ]
+    )]
+    public function delete(int $id): JsonResponse
+    {
+
+        $this->commercialOfferService->deleteCommercialOffer($id);
+        return new JsonResponse(null, 204);
+    }
+
     #[Route('/{id}/items', name: 'commercial_offer_add_item', methods: ['POST'])]
     #[OA\Post(
         path: '/api/commercial-offers/{id}/items',
@@ -69,7 +91,6 @@ class CommercialOfferController extends AbstractController
                     new OA\Property(property: 'product_id', type: 'integer'),
                     new OA\Property(property: 'base_license_id', type: 'integer', nullable: true),
                     new OA\Property(property: 'additional_module_id', type: 'integer', nullable: true),
-                    new OA\Property(property: 'quantity', type: 'integer', default: 1)
                 ]
             )
         ),
@@ -134,7 +155,7 @@ class CommercialOfferController extends AbstractController
             $this->entityManager->getRepository(AdditionalModule::class)->find($data['additional_module_id']) :
             null;
 
-        $quantity = $data['quantity'] ?? 1;
+        $quantity = 1; // всегда 1, поле не принимается от клиента
 
         $item = $this->commercialOfferService->addProductToOffer(
             $offer,

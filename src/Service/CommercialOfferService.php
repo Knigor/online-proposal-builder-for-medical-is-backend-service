@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Repository\DiscountLevelRepository;
 use App\Repository\LicenseCompositionRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CommercialOfferService
 {
@@ -140,5 +141,18 @@ class CommercialOfferService
     public function getCompatibleModules(BaseLicense $baseLicense): array
     {
         return $this->licenseCompositionRepository->findCompatibleModules($baseLicense);
+    }
+
+
+    public function deleteCommercialOffer(int $id): void
+    {
+        $offer = $this->entityManager->getRepository(CommercialOffers::class)->find($id);
+
+        if (!$offer) {
+            throw new NotFoundHttpException('Коммерческое предложение не найдено');
+        }
+
+        $this->entityManager->remove($offer);
+        $this->entityManager->flush();
     }
 }

@@ -16,7 +16,7 @@ class CommercialOffersItems
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'commercialOffersItems')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Groups(['offer:item:read'])]
     private ?CommercialOffers $commercialOfferId = null;
 
