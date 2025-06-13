@@ -23,6 +23,7 @@ class DiscountLevelService
         ?int $maxLicenses,
         ?int $minAmount,
         ?int $maxAmount,
+        ?int $discountLevelPercent,
         ?Product $product
     ): DiscountLevel {
         $discountLevel = new DiscountLevel();
@@ -31,6 +32,7 @@ class DiscountLevelService
         $discountLevel->setMaxLicenses($maxLicenses);
         $discountLevel->setMinAmount($minAmount);
         $discountLevel->setMaxAmount($maxAmount);
+        $discountLevel->setDiscountPercent($discountLevelPercent);
         $discountLevel->setProduct($product);
 
         $this->entityManager->persist($discountLevel);
@@ -55,9 +57,37 @@ class DiscountLevelService
         $this->entityManager->flush();
     }
 
-    public function getAllDiscountLevels(): array
+    public function getAllDiscountLevels(array $filters = []): array
     {
-        return $this->discountLevelRepository->findAll();
+        $queryBuilder = $this->discountLevelRepository->createQueryBuilder('dl')
+            ->leftJoin('dl.product', 'p');
+
+        if (!empty($filters['type'])) {
+            $queryBuilder->andWhere('dl.type = :type')
+                ->setParameter('type', $filters['type']);
+        }
+
+        if (!empty($filters['product_id'])) {
+            $queryBuilder->andWhere('dl.product = :product_id')
+                ->setParameter('product_id', $filters['product_id']);
+        }
+
+        if (!empty($filters['search'])) {
+            $queryBuilder->andWhere('p.nameProduct LIKE :search')
+                ->setParameter('search', '%'.$filters['search'].'%');
+        }
+
+        if (!empty($filters['min_discount'])) {
+            $queryBuilder->andWhere('dl.discount_percent >= :min_discount')
+                ->setParameter('min_discount', $filters['min_discount']);
+        }
+
+        if (!empty($filters['max_discount'])) {
+            $queryBuilder->andWhere('dl.discount_percent <= :max_discount')
+                ->setParameter('max_discount', $filters['max_discount']);
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
 

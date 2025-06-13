@@ -52,8 +52,38 @@ class ProductService
         $this->entityManager->flush();
     }
 
-    public function getAllProducts(): array
-    {
-        return $this->productRepository->findAll();
+    public function getAllProducts(
+        ?string $search = null,
+        array $filters = [],
+        ?string $sort = null,
+        ?string $direction = null
+    ): array {
+        $qb = $this->productRepository->createQueryBuilder('p');
+
+        if ($search) {
+            $qb->andWhere('p.nameProduct LIKE :search OR p.discriptionProduct LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        if (isset($filters['user_id'])) {
+            $qb->andWhere('p.userProduct = :user_id')
+                ->setParameter('user_id', $filters['user_id']);
+        }
+
+        // Сортировка
+        if ($sort && $sort === 'name_product') {
+            $field = match ($sort) {
+                'name_product' => 'p.nameProduct',
+                default => 'p.id',
+            };
+
+            $direction = strtolower($direction) === 'desc' ? 'DESC' : 'ASC';
+
+            $qb->orderBy($field, $direction);
+        }
+
+        return $qb->getQuery()->getResult();
     }
+
+
 }

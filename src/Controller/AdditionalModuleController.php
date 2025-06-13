@@ -37,15 +37,33 @@ class AdditionalModuleController extends AbstractController
                         new OA\Property(property: 'offer_price', type: 'number'),
                         new OA\Property(property: 'purchase_price', type: 'number'),
                         new OA\Property(property: 'max_discount_percent', type: 'number'),
+                        new OA\Property(property: 'name_product', type: 'string'),
                         new OA\Property(property: 'product_id', type: 'integer', nullable: true),
                     ]
                 ))
             )
         ]
     )]
-    public function list(): JsonResponse
+    #[OA\Parameter(name: 'product_id', in: 'query', required: false, schema: new OA\Schema(type: 'integer'))]
+    #[OA\Parameter(name: 'name_module', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'sort', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['name_module', 'offer_price', 'purchase_price']))]
+    #[OA\Parameter(name: 'direction', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['asc', 'desc']))]
+    public function list(Request $request): JsonResponse
     {
-        $modules = $this->additionalModuleService->getAllModules();
+        $filters = [];
+
+        if ($request->query->get('product_id')) {
+            $filters['product_id'] = (int)$request->query->get('product_id');
+        }
+
+        if ($request->query->get('name_module')) {
+            $filters['name_module'] = $request->query->get('name_module');
+        }
+
+        $sort = $request->query->get('sort');
+        $direction = $request->query->get('direction');
+
+        $modules = $this->additionalModuleService->getAllModules($filters, $sort, $direction);
 
         $data = array_map(fn(AdditionalModule $module) => [
             'id' => $module->getId(),
@@ -55,10 +73,12 @@ class AdditionalModuleController extends AbstractController
             'purchase_price' => $module->getPurchasePrice(),
             'max_discount_percent' => $module->getMaxDiscountPercent(),
             'product_id' => $module->getProduct()?->getId(),
+            'name_product' => $module->getProduct()?->getNameProduct(),
         ], $modules);
 
         return $this->json($data);
     }
+
 
     #[Route('', methods: ['POST'])]
     #[OA\Post(

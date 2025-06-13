@@ -29,8 +29,14 @@ class ProductController extends AbstractController
     #[Route('', name: 'product_list', methods: ['GET'])]
     #[OA\Get(
         path: '/api/products',
-        summary: 'Получить список всех продуктов',
+        summary: 'Получить список всех продуктов с фильтром и поиском',
         tags: ['Product'],
+        parameters: [
+            new OA\Parameter(name: 'search', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'user_id', in: 'query', required: false, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'sort', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['name_product'])),
+            new OA\Parameter(name: 'direction', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])),
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -50,9 +56,19 @@ class ProductController extends AbstractController
             new OA\Response(response: 401, description: 'JWT Token not found or invalid')
         ]
     )]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        $products = $this->productService->getAllProducts();
+        $search = $request->query->get('search');
+        $userId = $request->query->get('user_id');
+        $sort = $request->query->get('sort');
+        $direction = $request->query->get('direction');
+
+        $filters = [];
+        if ($userId !== null) {
+            $filters['user_id'] = (int) $userId;
+        }
+
+        $products = $this->productService->getAllProducts($search, $filters, $sort, $direction);
 
         $data = array_map(function (Product $product) {
             return [
@@ -65,6 +81,8 @@ class ProductController extends AbstractController
 
         return $this->json($data);
     }
+
+
 
     #[Route('', name: 'product_create', methods: ['POST'])]
     #[OA\Post(

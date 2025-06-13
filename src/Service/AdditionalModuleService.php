@@ -70,8 +70,36 @@ class AdditionalModuleService
         $this->entityManager->flush();
     }
 
-    public function getAllModules(): array
+    public function getAllModules(array $filters = [], ?string $sort = null, ?string $direction = null): array
     {
-        return $this->additionalModuleRepository->findAll();
+        $qb = $this->additionalModuleRepository->createQueryBuilder('m')
+            ->leftJoin('m.product', 'p');
+
+        if (!empty($filters['product_id'])) {
+            $qb->andWhere('p.id = :product_id')
+                ->setParameter('product_id', $filters['product_id']);
+        }
+
+        if (!empty($filters['name_module'])) {
+            $qb->andWhere('m.nameModule LIKE :name_module')
+                ->setParameter('name_module', '%' . $filters['name_module'] . '%');
+        }
+
+        // Сортировка
+        if ($sort && in_array($sort, ['name_module', 'offer_price', 'purchase_price'], true)) {
+            $sortField = match ($sort) {
+                'name_module' => 'm.nameModule',
+                'offer_price' => 'm.offerPrice',
+                'purchase_price' => 'm.purchasePrice',
+                default => 'm.id'
+            };
+
+            $direction = strtolower($direction) === 'desc' ? 'DESC' : 'ASC';
+
+            $qb->orderBy($sortField, $direction);
+        }
+
+        return $qb->getQuery()->getResult();
     }
+
 }

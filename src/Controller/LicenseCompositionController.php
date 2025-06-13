@@ -27,16 +27,24 @@ class LicenseCompositionController extends AbstractController
     #[Route('', name: 'license_composition_create', methods: ['POST'])]
     #[OA\Post(
         path: '/api/license-compositions',
-        summary: 'Создать связь лицензии и модуля',
+        summary: 'Создать связи лицензии и модулей',
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['required', 'compatible'],
+                required: ['base_license_id', 'modules'],
                 properties: [
-                    new OA\Property(property: 'required', type: 'boolean'),
-                    new OA\Property(property: 'compatible', type: 'boolean'),
                     new OA\Property(property: 'base_license_id', type: 'integer'),
-                    new OA\Property(property: 'additional_module_id', type: 'integer')
+                    new OA\Property(
+                        property: 'modules',
+                        type: 'array',
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'module_id', type: 'integer'),
+                                new OA\Property(property: 'required', type: 'boolean'),
+                                new OA\Property(property: 'compatible', type: 'boolean')
+                            ]
+                        )
+                    )
                 ]
             )
         ),
@@ -44,15 +52,18 @@ class LicenseCompositionController extends AbstractController
         responses: [
             new OA\Response(
                 response: 201,
-                description: 'Связь создана',
+                description: 'Связи созданы',
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'id', type: 'integer'),
-                        new OA\Property(property: 'required', type: 'boolean'),
-                        new OA\Property(property: 'compatible', type: 'boolean'),
-                        new OA\Property(property: 'base_license', type: 'object'),
-                        new OA\Property(property: 'additional_module', type: 'object')
-                    ]
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer'),
+                            new OA\Property(property: 'required', type: 'boolean'),
+                            new OA\Property(property: 'compatible', type: 'boolean'),
+                            new OA\Property(property: 'base_license', type: 'object'),
+                            new OA\Property(property: 'additional_module', type: 'object')
+                        ]
+                    )
                 )
             ),
             new OA\Response(response: 400, description: 'Неверные параметры'),
@@ -63,70 +74,123 @@ class LicenseCompositionController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $required = $data['required'] ?? null;
-        $compatible = $data['compatible'] ?? null;
         $baseLicenseId = $data['base_license_id'] ?? null;
-        $additionalModuleId = $data['additional_module_id'] ?? null;
+        $modules = $data['modules'] ?? [];
 
-        if ($required === null || $compatible === null) {
+        if ($baseLicenseId === null || empty($modules)) {
             return $this->json(['error' => 'Missing required parameters'], 400);
         }
 
-        $baseLicense = $baseLicenseId ? $this->entityManager->getRepository(BaseLicense::class)->find($baseLicenseId) : null;
-        $additionalModule = $additionalModuleId ? $this->entityManager->getRepository(AdditionalModule::class)->find($additionalModuleId) : null;
+        $baseLicense = $this->entityManager->getRepository(BaseLicense::class)->find($baseLicenseId);
+        if (!$baseLicense) {
+            return $this->json(['error' => 'Base license not found'], 404);
+        }
 
-        $licenseComposition = $this->licenseCompositionService->createLicenseComposition(
-            $required,
-            $compatible,
-            $baseLicense,
-            $additionalModule
-        );
+        $results = [];
+        foreach ($modules as $moduleData) {
+            $moduleId = $moduleData['module_id'] ?? null;
+            $required = $moduleData['required'] ?? false;
+            $compatible = $moduleData['compatible'] ?? true;
+
+            if ($moduleId === null) {
+                continue;
+            }
+
+            $additionalModule = $this->entityManager->getRepository(AdditionalModule::class)->find($moduleId);
+            if (!$additionalModule) {
+                continue;
+            }
+
+            $licenseComposition = $this->licenseCompositionService->createLicenseComposition(
+                $required,
+                $compatible,
+                $baseLicense,
+                $additionalModule
+            );
+
+            $results[] = $licenseComposition;
+        }
 
         return new JsonResponse(
-            $this->serializer->serialize($licenseComposition, 'json', [
+            $this->serializer->serialize($results, 'json', [
                 'groups' => ['composition:read', 'license:read', 'module:read']
             ]),
-            200,
+            201,
             [],
             true
         );
     }
-
     #[Route('/{id}', name: 'license_composition_get', methods: ['GET'])]
     #[OA\Get(
         path: '/api/license-compositions/{id}',
-        summary: 'Получить связь по ID',
+        summary: 'Получить связи лицензии по ID',
         tags: ['License Composition'],
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Связь найдена',
+                description: 'Связи найдены',
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'id', type: 'integer'),
-                        new OA\Property(property: 'required', type: 'boolean'),
-                        new OA\Property(property: 'compatible', type: 'boolean'),
-                        new OA\Property(property: 'base_license', type: 'object'),
-                        new OA\Property(property: 'additional_module', type: 'object')
-                    ]
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'base_license_id', type: 'integer'),
+                            new OA\Property(property: 'base_license_name', type: 'string'),
+                            new OA\Property(
+                                property: 'additional_modules',
+                                type: 'array',
+                                items: new OA\Items(
+                                    properties: [
+                                        new OA\Property(property: 'id', type: 'integer'),
+                                        new OA\Property(property: 'name', type: 'string'),
+                                        new OA\Property(property: 'relation', type: 'string')
+                                    ]
+                                )
+                            )
+                        ]
+                    )
                 )
             ),
-            new OA\Response(response: 404, description: 'Связь не найдена'),
+            new OA\Response(response: 404, description: 'Лицензия не найдена'),
             new OA\Response(response: 401, description: 'JWT Token not found or invalid')
         ]
     )]
     public function get(int $id): JsonResponse
     {
-        $licenseComposition = $this->licenseCompositionService->getLicenseComposition($id);
+        // Получаем базовую лицензию
+        $baseLicense = $this->entityManager->getRepository(BaseLicense::class)->find($id);
 
-        if (!$licenseComposition) {
-            return $this->json(['error' => 'License composition not found'], 404);
+        if (!$baseLicense) {
+            return $this->json(['error' => 'Base license not found'], 404);
+        }
+
+        // Получаем все связи для этой лицензии
+        $compositions = $this->entityManager->getRepository(LicenseComposition::class)
+            ->findBy(['baseLicense' => $id]);
+
+        // Формируем ответ
+        $response = [
+            'base_license_id' => $baseLicense->getId(),
+            'base_license_name' => $baseLicense->getNameLicense(),
+            'additional_modules' => []
+        ];
+
+        foreach ($compositions as $composition) {
+            $relation = 'не сочетается';
+            if ($composition->isRequired()) {
+                $relation = 'входит';
+            } elseif ($composition->isCompatible()) {
+                $relation = 'сочетается';
+            }
+
+            $response['additional_modules'][] = [
+                'id' => $composition->getId(),
+                'name' => $composition->getAdditionalModule()->getNameModule(),
+                'relation' => $relation
+            ];
         }
 
         return new JsonResponse(
-            $this->serializer->serialize($licenseComposition, 'json', [
-                'groups' => ['composition:read', 'license:read', 'module:read']
-            ]),
+            $this->serializer->serialize($response, 'json'),
             200,
             [],
             true
@@ -136,15 +200,24 @@ class LicenseCompositionController extends AbstractController
     #[Route('/{id}', name: 'license_composition_update', methods: ['PUT'])]
     #[OA\Put(
         path: '/api/license-compositions/{id}',
-        summary: 'Обновить связь',
+        summary: 'Обновить связь лицензии и модулей',
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                required: ['base_license_id', 'modules'],
                 properties: [
-                    new OA\Property(property: 'required', type: 'boolean'),
-                    new OA\Property(property: 'compatible', type: 'boolean'),
                     new OA\Property(property: 'base_license_id', type: 'integer'),
-                    new OA\Property(property: 'additional_module_id', type: 'integer')
+                    new OA\Property(
+                        property: 'modules',
+                        type: 'array',
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'module_id', type: 'integer'),
+                                new OA\Property(property: 'required', type: 'boolean'),
+                                new OA\Property(property: 'compatible', type: 'boolean')
+                            ]
+                        )
+                    )
                 ]
             )
         ),
@@ -152,53 +225,80 @@ class LicenseCompositionController extends AbstractController
         responses: [
             new OA\Response(
                 response: 200,
-                description: 'Связь обновлена',
+                description: 'Связи обновлены',
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'id', type: 'integer'),
-                        new OA\Property(property: 'required', type: 'boolean'),
-                        new OA\Property(property: 'compatible', type: 'boolean'),
-                        new OA\Property(property: 'base_license', type: 'object'),
-                        new OA\Property(property: 'additional_module', type: 'object')
-                    ]
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer'),
+                            new OA\Property(property: 'required', type: 'boolean'),
+                            new OA\Property(property: 'compatible', type: 'boolean'),
+                            new OA\Property(property: 'base_license', type: 'object'),
+                            new OA\Property(property: 'additional_module', type: 'object')
+                        ]
+                    )
                 )
             ),
-            new OA\Response(response: 404, description: 'Связь не найдена'),
+            new OA\Response(response: 400, description: 'Неверные параметры'),
+            new OA\Response(response: 404, description: 'Лицензия или модуль не найден'),
             new OA\Response(response: 401, description: 'JWT Token not found or invalid')
         ]
     )]
     public function update(int $id, Request $request): JsonResponse
     {
-        $licenseComposition = $this->licenseCompositionService->getLicenseComposition($id);
-
-        if (!$licenseComposition) {
-            return $this->json(['error' => 'License composition not found'], 404);
-        }
-
         $data = json_decode($request->getContent(), true);
 
-        if (isset($data['required'])) {
-            $licenseComposition->setRequired($data['required']);
+        // Валидация входных данных
+        if (!isset($data['base_license_id'])) {
+            return $this->json(['error' => 'Missing base_license_id parameter'], 400);
+        }
+        if (!isset($data['modules']) || !is_array($data['modules'])) {
+            return $this->json(['error' => 'Missing or invalid modules parameter'], 400);
         }
 
-        if (isset($data['compatible'])) {
-            $licenseComposition->setCompatible($data['compatible']);
+        // Поиск базовой лицензии
+        $baseLicense = $this->entityManager->getRepository(BaseLicense::class)->find($data['base_license_id']);
+        if (!$baseLicense) {
+            return $this->json(['error' => 'Base license not found'], 404);
         }
 
-        if (isset($data['base_license_id'])) {
-            $baseLicense = $this->entityManager->getRepository(BaseLicense::class)->find($data['base_license_id']);
+        // Удаляем старые связи для этой лицензии
+        $oldCompositions = $this->entityManager->getRepository(LicenseComposition::class)
+            ->findBy(['baseLicense' => $data['base_license_id']]);
+
+        foreach ($oldCompositions as $oldComposition) {
+            $this->entityManager->remove($oldComposition);
+        }
+
+        $results = [];
+        foreach ($data['modules'] as $moduleData) {
+            // Валидация данных модуля
+            if (!isset($moduleData['module_id'])) {
+                continue;
+            }
+
+            // Поиск модуля
+            $additionalModule = $this->entityManager->getRepository(AdditionalModule::class)
+                ->find($moduleData['module_id']);
+            if (!$additionalModule) {
+                continue;
+            }
+
+            // Создаем новую связь
+            $licenseComposition = new LicenseComposition();
+            $licenseComposition->setRequired($moduleData['required'] ?? false);
+            $licenseComposition->setCompatible($moduleData['compatible'] ?? true);
             $licenseComposition->setBaseLicense($baseLicense);
-        }
-
-        if (isset($data['additional_module_id'])) {
-            $additionalModule = $this->entityManager->getRepository(AdditionalModule::class)->find($data['additional_module_id']);
             $licenseComposition->setAdditionalModule($additionalModule);
+
+            $this->entityManager->persist($licenseComposition);
+            $results[] = $licenseComposition;
         }
 
-        $this->licenseCompositionService->updateLicenseComposition($licenseComposition);
+        $this->entityManager->flush();
 
         return new JsonResponse(
-            $this->serializer->serialize($licenseComposition, 'json', [
+            $this->serializer->serialize($results, 'json', [
                 'groups' => ['composition:read', 'license:read', 'module:read']
             ]),
             200,
@@ -234,8 +334,45 @@ class LicenseCompositionController extends AbstractController
     #[Route('', name: 'license_composition_list', methods: ['GET'])]
     #[OA\Get(
         path: '/api/license-compositions',
-        summary: 'Получить список всех связей',
+        summary: 'Получить сгруппированный список связей базовых лицензий и дополнительных модулей',
         tags: ['License Composition'],
+        parameters: [
+            new OA\Parameter(
+                name: 'required',
+                in: 'query',
+                required: false,
+                description: 'Фильтр по обязательности (1 = входит, 0 = не входит)',
+                schema: new OA\Schema(type: 'boolean')
+            ),
+            new OA\Parameter(
+                name: 'compatible',
+                in: 'query',
+                required: false,
+                description: 'Фильтр по совместимости (1 = сочетается, 0 = не сочетается)',
+                schema: new OA\Schema(type: 'boolean')
+            ),
+            new OA\Parameter(
+                name: 'sort',
+                in: 'query',
+                required: false,
+                description: 'Поле сортировки (base_license_name или additional_module_name)',
+                schema: new OA\Schema(type: 'string', enum: ['base_license_name', 'additional_module_name'])
+            ),
+            new OA\Parameter(
+                name: 'direction',
+                in: 'query',
+                required: false,
+                description: 'Направление сортировки (asc или desc)',
+                schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])
+            ),
+            new OA\Parameter(
+                name: 'base_license_name',
+                in: 'query',
+                required: false,
+                description: 'Поиск по названию базовой лицензии (частичное совпадение)',
+                schema: new OA\Schema(type: 'string')
+            ),
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -244,29 +381,44 @@ class LicenseCompositionController extends AbstractController
                     type: 'array',
                     items: new OA\Items(
                         properties: [
-                            new OA\Property(property: 'id', type: 'integer'),
-                            new OA\Property(property: 'required', type: 'boolean'),
-                            new OA\Property(property: 'compatible', type: 'boolean'),
-                            new OA\Property(property: 'base_license', type: 'object'),
-                            new OA\Property(property: 'additional_module', type: 'object')
-                        ]
+                            new OA\Property(property: 'base_license_id', type: 'integer'),
+                            new OA\Property(property: 'base_license_name', type: 'string'),
+                            new OA\Property(
+                                property: 'additional_modules',
+                                type: 'array',
+                                items: new OA\Items(
+                                    properties: [
+                                        new OA\Property(property: 'id', type: 'integer'),
+                                        new OA\Property(property: 'name', type: 'string'),
+                                        new OA\Property(property: 'relation', type: 'string', description: 'входит / сочетается / не сочетается'),
+                                    ],
+                                    type: 'object'
+                                )
+                            )
+                        ],
+                        type: 'object'
                     )
                 )
-            ),
-            new OA\Response(response: 401, description: 'JWT Token not found or invalid')
+            )
         ]
     )]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        $licenseCompositions = $this->licenseCompositionService->getAllLicenseCompositions();
+        $required = $request->query->get('required');
+        $compatible = $request->query->get('compatible');
+        $sort = $request->query->get('sort', 'base_license_name');
+        $direction = $request->query->get('direction', 'asc');
+        $baseLicenseName = $request->query->get('base_license_name');
 
-        return new JsonResponse(
-            $this->serializer->serialize($licenseCompositions, 'json', [
-                'groups' => ['composition:read', 'license:read', 'module:read']
-            ]),
-            200,
-            [],
-            true
-        );
+        $groupedCompositions = $this->licenseCompositionService->getAllGroupedCompositions([
+            'required' => $required,
+            'compatible' => $compatible,
+            'sort' => $sort,
+            'direction' => $direction,
+            'base_license_name' => $baseLicenseName,
+        ]);
+
+        return $this->json($groupedCompositions);
     }
+
 }

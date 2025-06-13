@@ -16,28 +16,31 @@ class BaseLicenseRepository extends ServiceEntityRepository
         parent::__construct($registry, BaseLicense::class);
     }
 
-    //    /**
-    //     * @return BaseLicense[] Returns an array of BaseLicense objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('b')
-    //            ->andWhere('b.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('b.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findByFilters(array $filters = [], ?string $sort = null, ?string $direction = null): array
+    {
+        $qb = $this->createQueryBuilder('l');
 
-    //    public function findOneBySomeField($value): ?BaseLicense
-    //    {
-    //        return $this->createQueryBuilder('b')
-    //            ->andWhere('b.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if (!empty($filters['name_license'])) {
+            $qb->andWhere('LOWER(l.nameLicense) LIKE :name_license')
+                ->setParameter('name_license', '%' . mb_strtolower($filters['name_license']) . '%');
+        }
+
+        if (!empty($filters['product_id'])) {
+            $qb->leftJoin('l.product', 'p')
+                ->andWhere('p.id = :product_id')
+                ->setParameter('product_id', $filters['product_id']);
+        }
+
+        if ($sort && in_array($sort, ['name_license', 'price'], true)) {
+            $sortField = match ($sort) {
+                'name_license' => 'l.nameLicense',
+                'price' => 'l.price',
+                default => 'l.id'
+            };
+
+            $qb->orderBy($sortField, strtolower($direction) === 'desc' ? 'DESC' : 'ASC');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

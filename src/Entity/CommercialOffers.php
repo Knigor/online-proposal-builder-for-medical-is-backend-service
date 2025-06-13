@@ -42,6 +42,9 @@ class CommercialOffers
     #[ORM\OneToMany(targetEntity: CommercialOffersItems::class, mappedBy: 'commercialOfferId',cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $commercialOffersItems;
 
+    #[ORM\ManyToOne(inversedBy: 'commercialOffers')]
+    private ?Customer $customer = null;
+
 
     public function __construct()
     {
@@ -154,6 +157,18 @@ class CommercialOffers
                 $commercialOffersItem->setCommercialOfferId(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getCustomer(): ?Customer
+    {
+        return $this->customer;
+    }
+
+    public function setCustomer(?Customer $customer): static
+    {
+        $this->customer = $customer;
 
         return $this;
     }

@@ -115,6 +115,7 @@ class DiscountLevelController extends AbstractController
         $maxLicenses = $data['max_licenses'] ?? null;
         $minAmount = $data['min_amount'] ?? null;
         $maxAmount = $data['max_amount'] ?? null;
+        $discountLevelPercent = $data['discount_percent'] ?? null;
         $productId = $data['product_id'] ?? null;
 
         if (!$type) {
@@ -129,6 +130,7 @@ class DiscountLevelController extends AbstractController
             $maxLicenses,
             $minAmount,
             $maxAmount,
+            $discountLevelPercent,
             $product
         );
 
@@ -268,6 +270,10 @@ class DiscountLevelController extends AbstractController
             $discountLevel->setMaxAmount($data['max_amount']);
         }
 
+        if (isset($data['discount_percent'])) {
+            $discountLevel->setDiscountPercent($data['discount_percent']);
+        }
+
         if (isset($data['product_id'])) {
             $product = $this->entityManager->getRepository(Product::class)->find($data['product_id']);
             $discountLevel->setProduct($product);
@@ -319,8 +325,45 @@ class DiscountLevelController extends AbstractController
     #[Route('', name: 'discount_level_list', methods: ['GET'])]
     #[OA\Get(
         path: '/api/discount-levels',
-        summary: 'Получить список всех уровней скидок',
+        summary: 'Получить список всех уровней скидок с возможностью фильтрации и поиска',
         tags: ['Discount Level'],
+        parameters: [
+            new OA\Parameter(
+                name: 'type',
+                description: 'Фильтр по типу скидки',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'product_id',
+                description: 'Фильтр по ID продукта',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'integer')
+            ),
+            new OA\Parameter(
+                name: 'search',
+                description: 'Поиск по связанному продукту (названию)',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string')
+            ),
+            new OA\Parameter(
+                name: 'min_discount',
+                description: 'Минимальный процент скидки',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'number', format: 'float')
+            ),
+            new OA\Parameter(
+                name: 'max_discount',
+                description: 'Максимальный процент скидки',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'number', format: 'float')
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -344,9 +387,17 @@ class DiscountLevelController extends AbstractController
             new OA\Response(response: 401, description: 'JWT Token not found or invalid')
         ]
     )]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        $discountLevels = $this->discountLevelService->getAllDiscountLevels();
+        $filters = [
+            'type' => $request->query->get('type'),
+            'product_id' => $request->query->get('product_id'),
+            'search' => $request->query->get('search'),
+            'min_discount' => $request->query->get('min_discount'),
+            'max_discount' => $request->query->get('max_discount'),
+        ];
+
+        $discountLevels = $this->discountLevelService->getAllDiscountLevels($filters);
 
         $result = [];
         foreach ($discountLevels as $discountLevel) {

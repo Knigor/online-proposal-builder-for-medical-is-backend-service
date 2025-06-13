@@ -4,11 +4,12 @@ namespace App\Service;
 
 use App\Entity\BaseLicense;
 use App\Entity\Product;
+use App\Repository\BaseLicenseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class BaseLicenseService
 {
-    public function __construct(private EntityManagerInterface $entityManager) {}
+    public function __construct(private EntityManagerInterface $entityManager, private BaseLicenseRepository $baseLicenseRepository) {}
 
     public function createBaseLicense(array $data): BaseLicense
     {
@@ -51,5 +52,10 @@ class BaseLicenseService
         $this->entityManager->flush();
 
         return $license;
+    }
+
+    public function getAll(array $filters = [], ?string $sort = null, ?string $direction = null): array
+    {
+        return $this->baseLicenseRepository->findByFilters($filters, $sort, $direction);
     }
 }

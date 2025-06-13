@@ -62,14 +62,54 @@ class BaseLicenseController extends AbstractController
         path: '/api/base-licenses',
         tags: ['BaseLicenses'],
         summary: 'Получить список всех базовых лицензий',
-        responses: [new OA\Response(response: 200, description: 'Список лицензий')]
+        parameters: [
+            new OA\Parameter(name: 'name_license', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'product_id', in: 'query', required: false, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'sort', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['name_license', 'price'])),
+            new OA\Parameter(name: 'direction', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['asc', 'desc']))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Список лицензий',
+                content: new OA\JsonContent(
+                    type: 'array',
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer'),
+                            new OA\Property(property: 'name_license', type: 'string'),
+                            new OA\Property(property: 'description_license', type: 'string'),
+                            new OA\Property(property: 'price', type: 'number'),
+                            new OA\Property(property: 'max_users', type: 'integer'),
+                            new OA\Property(property: 'product_id', type: 'integer', nullable: true),
+                            new OA\Property(property: 'name_product', type: 'string', nullable: true),
+                        ]
+                    )
+                )
+            )
+        ]
     )]
     #[Groups(['license:read'])]
-    public function list(): JsonResponse
+    public function list(Request $request, BaseLicenseService $service): JsonResponse
     {
-        $licenses = $this->baseLicenseRepository->findAll();
+        $filters = [];
+
+        if ($request->query->get('name_license')) {
+            $filters['name_license'] = $request->query->get('name_license');
+        }
+
+        if ($request->query->get('product_id')) {
+            $filters['product_id'] = (int)$request->query->get('product_id');
+        }
+
+        $sort = $request->query->get('sort');
+        $direction = $request->query->get('direction');
+
+        $licenses = $service->getAll($filters, $sort, $direction);
+
         return $this->json($licenses, 200, [], ['groups' => ['license:read']]);
     }
+
 
     #[Route('/{id}', name: 'get_base_license', methods: ['GET'])]
     #[OA\Get(

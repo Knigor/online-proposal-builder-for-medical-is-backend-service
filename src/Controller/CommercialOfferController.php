@@ -273,14 +273,17 @@ class CommercialOfferController extends AbstractController
                                         ]
                                     ),
                                     new OA\Property(
-                                        property: 'additional_module',
-                                        type: 'object',
-                                        nullable: true,
-                                        properties: [
-                                            new OA\Property(property: 'id', type: 'integer'),
-                                            new OA\Property(property: 'name', type: 'string'),
-                                            new OA\Property(property: 'price', type: 'number', format: 'float')
-                                        ]
+                                        property: 'additional_modules',
+                                        type: 'array',
+                                        items: new OA\Items(
+                                            properties: [
+                                                new OA\Property(property: 'id', type: 'integer'),
+                                                new OA\Property(property: 'name', type: 'string'),
+                                                new OA\Property(property: 'price', type: 'number', format: 'float'),
+                                                new OA\Property(property: 'required', type: 'boolean'),
+                                                new OA\Property(property: 'compatible', type: 'boolean')
+                                            ]
+                                        )
                                     ),
                                     new OA\Property(property: 'quantity', type: 'integer'),
                                     new OA\Property(property: 'price', type: 'number', format: 'float'),
@@ -298,9 +301,25 @@ class CommercialOfferController extends AbstractController
     )]
     public function show(CommercialOffers $offer): JsonResponse
     {
-
         $items = [];
         foreach ($offer->getCommercialOffersItems() as $item) {
+            $modules = [];
+
+            // Получаем все связанные модули для этой лицензии
+            if ($item->getBaseLicense()) {
+                foreach ($item->getBaseLicense()->getLicenseCompositions() as $composition) {
+                    if ($composition->getAdditionalModule()) {
+                        $modules[] = [
+                            'id' => $composition->getAdditionalModule()->getId(),
+                            'name' => $composition->getAdditionalModule()->getNameModule(),
+                            'price' => $composition->getAdditionalModule()->getPurchasePrice(),
+                            'required' => $composition->isRequired(),
+                            'compatible' => $composition->isCompatible()
+                        ];
+                    }
+                }
+            }
+
             $items[] = [
                 'id' => $item->getId(),
                 'product' => [
@@ -312,11 +331,7 @@ class CommercialOfferController extends AbstractController
                     'name' => $item->getBaseLicense()->getNameLicense(),
                     'price' => $item->getBaseLicense()->getPurchasePriceLicense(),
                 ] : null,
-                'additional_module' => $item->getAdditionalModule() ? [
-                    'id' => $item->getAdditionalModule()->getId(),
-                    'name' => $item->getAdditionalModule()->getNameModule(),
-                    'price' => $item->getAdditionalModule()->getPurchasePrice(),
-                ] : null,
+                'additional_modules' => $modules,
                 'quantity' => $item->getQuantity(),
                 'price' => $item->getPrice(),
                 'discount' => $item->getDiscount(),

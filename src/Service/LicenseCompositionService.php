@@ -54,4 +54,9 @@ class LicenseCompositionService
     {
         return $this->licenseCompositionRepository->findAll();
     }
+
+    public function getAllGroupedCompositions(array $filters = []): array
+    {
+        return $this->licenseCompositionRepository->findGroupedByBaseLicense($filters);
+    }
 }
