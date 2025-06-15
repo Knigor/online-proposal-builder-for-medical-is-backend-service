@@ -90,7 +90,12 @@ class CommercialOfferController extends AbstractController
                 properties: [
                     new OA\Property(property: 'product_id', type: 'integer'),
                     new OA\Property(property: 'base_license_id', type: 'integer', nullable: true),
-                    new OA\Property(property: 'additional_module_id', type: 'integer', nullable: true),
+                    new OA\Property(
+                        property: 'additional_module_ids',
+                        type: 'array',
+                        items: new OA\Items(type: 'integer'),
+                        nullable: true
+                    ),
                 ]
             )
         ),
@@ -151,9 +156,12 @@ class CommercialOfferController extends AbstractController
             $this->entityManager->getRepository(BaseLicense::class)->find($data['base_license_id']) :
             null;
 
-        $additionalModule = isset($data['additional_module_id']) ?
-            $this->entityManager->getRepository(AdditionalModule::class)->find($data['additional_module_id']) :
-            null;
+        $additionalModules = [];
+        if (!empty($data['additional_module_ids']) && is_array($data['additional_module_ids'])) {
+            $additionalModules = $this->entityManager
+                ->getRepository(AdditionalModule::class)
+                ->findBy(['id' => $data['additional_module_ids']]);
+        }
 
         $quantity = 1; // всегда 1, поле не принимается от клиента
 
@@ -161,7 +169,7 @@ class CommercialOfferController extends AbstractController
             $offer,
             $product,
             $baseLicense,
-            $additionalModule,
+            $additionalModules,
             $quantity
         );
 

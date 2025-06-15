@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\AdditionalModule;
 use App\Entity\BaseLicense;
 use App\Entity\CommercialOffers;
+use App\Entity\CommercialOffersItemModule;
 use App\Entity\CommercialOffersItems;
 use App\Entity\Product;
 use App\Entity\User;
@@ -40,11 +41,11 @@ class CommercialOfferService
         CommercialOffers $offer,
         Product $product,
         ?BaseLicense $baseLicense = null,
-        ?AdditionalModule $additionalModule = null,
+        array $additionalModules = [],  // массив объектов AdditionalModule
         int $quantity = 1
     ): CommercialOffersItems {
-        // Проверяем, есть ли уже такой продукт в предложении
-        $existingItem = $this->findExistingItem($offer, $product, $baseLicense, $additionalModule);
+        // Проверяем, есть ли уже такой продукт в предложении (логика в findExistingItem должна быть обновлена для новой связи)
+        $existingItem = $this->findExistingItem($offer, $product, $baseLicense, $additionalModules);
 
         if ($existingItem) {
             $existingItem->setQuantity($existingItem->getQuantity() + $quantity);
@@ -57,8 +58,20 @@ class CommercialOfferService
         $item->setCommercialOfferId($offer);
         $item->setProduct($product);
         $item->setBaseLicense($baseLicense);
-        $item->setAdditionalModule($additionalModule);
         $item->setQuantity($quantity);
+
+        // Добавляем дополнительные модули через промежуточную сущность
+        foreach ($additionalModules as $module) {
+            $itemModule = new CommercialOffersItemModule();
+            $itemModule->setItem($item);
+            $itemModule->setAdditionalModule($module);
+
+            // Добавляем связь с item
+            $item->addCommercialOffersItemModule($itemModule);
+
+            // Сохраняем промежуточную сущность
+            $this->entityManager->persist($itemModule);
+        }
 
         $this->updateItemPrice($item);
         $offer->addCommercialOffersItem($item);
@@ -71,20 +84,37 @@ class CommercialOfferService
         return $item;
     }
 
+
     private function findExistingItem(
         CommercialOffers $offer,
         Product $product,
         ?BaseLicense $baseLicense,
-        ?AdditionalModule $additionalModule
+        array $additionalModules = []
     ): ?CommercialOffersItems {
         foreach ($offer->getCommercialOffersItems() as $item) {
-            if ($item->getProduct() === $product &&
-                $item->getBaseLicense() === $baseLicense &&
-                $item->getAdditionalModule() === $additionalModule) {
+            if (
+                $item->getProduct() === $product &&
+                $item->getBaseLicense() === $baseLicense
+            ) {
                 return $item;
             }
         }
         return null;
+    }
+
+    private function compareModules(iterable $itemModules, array $inputModules): bool
+    {
+        $itemModuleIds = [];
+        foreach ($itemModules as $itemModule) {
+            $itemModuleIds[] = $itemModule->getId();
+        }
+
+        $inputModuleIds = array_map(fn($m) => $m->getId(), $inputModules);
+
+        sort($itemModuleIds);
+        sort($inputModuleIds);
+
+        return $itemModuleIds === $inputModuleIds;
     }
 
     private function updateItemPrice(CommercialOffersItems $item): void
@@ -95,8 +125,11 @@ class CommercialOfferService
             $price += $item->getBaseLicense()->getPurchasePriceLicense();
         }
 
-        if ($item->getAdditionalModule()) {
-            $price += $item->getAdditionalModule()->getPurchasePrice();
+        foreach ($item->getCommercialOffersItemModules() as $itemModule) {
+            $module = $itemModule->getAdditionalModule();
+            if ($module) {
+                $price += $module->getPurchasePrice();
+            }
         }
 
         // Применяем скидки

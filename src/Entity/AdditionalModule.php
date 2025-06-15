@@ -48,9 +48,23 @@ class AdditionalModule
     #[ORM\OneToMany(targetEntity: LicenseComposition::class, mappedBy: 'additionalModule')]
     private Collection $licenseCompositions;
 
+    /**
+     * @var Collection<int, CommercialOffersItemModule>
+     */
+    #[ORM\OneToMany(targetEntity: CommercialOffersItemModule::class, mappedBy: 'CommercialOffersItems')]
+    private Collection $commercialOffersItemModules;
+
+    /**
+     * @var Collection<int, CommercialOffersItemModule>
+     */
+    #[ORM\OneToMany(targetEntity: CommercialOffersItemModule::class, mappedBy: 'AdditionalModule')]
+    private Collection $commercialOffersItemsModules;
+
     public function __construct()
     {
         $this->licenseCompositions = new ArrayCollection();
+        $this->commercialOffersItemModules = new ArrayCollection();
+        $this->commercialOffersItemsModules = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -154,6 +168,66 @@ class AdditionalModule
             // set the owning side to null (unless already changed)
             if ($licenseComposition->getAdditionalModule() === $this) {
                 $licenseComposition->setAdditionalModule(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CommercialOffersItemModule>
+     */
+    public function getCommercialOffersItemModules(): Collection
+    {
+        return $this->commercialOffersItemModules;
+    }
+
+    public function addCommercialOffersItemModule(CommercialOffersItemModule $commercialOffersItemModule): static
+    {
+        if (!$this->commercialOffersItemModules->contains($commercialOffersItemModule)) {
+            $this->commercialOffersItemModules->add($commercialOffersItemModule);
+            $commercialOffersItemModule->setCommercialOffersItems($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommercialOffersItemModule(CommercialOffersItemModule $commercialOffersItemModule): static
+    {
+        if ($this->commercialOffersItemModules->removeElement($commercialOffersItemModule)) {
+            // set the owning side to null (unless already changed)
+            if ($commercialOffersItemModule->getCommercialOffersItems() === $this) {
+                $commercialOffersItemModule->setCommercialOffersItems(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CommercialOffersItemModule>
+     */
+    public function getCommercialOffersItemsModules(): Collection
+    {
+        return $this->commercialOffersItemsModules;
+    }
+
+    public function addCommercialOffersItemsModule(CommercialOffersItemModule $commercialOffersItemsModule): static
+    {
+        if (!$this->commercialOffersItemsModules->contains($commercialOffersItemsModule)) {
+            $this->commercialOffersItemsModules->add($commercialOffersItemsModule);
+            $commercialOffersItemsModule->setAdditionalModule($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommercialOffersItemsModule(CommercialOffersItemModule $commercialOffersItemsModule): static
+    {
+        if ($this->commercialOffersItemsModules->removeElement($commercialOffersItemsModule)) {
+            // set the owning side to null (unless already changed)
+            if ($commercialOffersItemsModule->getAdditionalModule() === $this) {
+                $commercialOffersItemsModule->setAdditionalModule(null);
             }
         }
 

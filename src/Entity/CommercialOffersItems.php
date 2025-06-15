@@ -2,11 +2,14 @@
 
 namespace App\Entity;
 
+use AllowDynamicProperties;
 use App\Repository\CommercialOffersItemsRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
-#[ORM\Entity(repositoryClass: CommercialOffersItemsRepository::class)]
+#[AllowDynamicProperties] #[ORM\Entity(repositoryClass: CommercialOffersItemsRepository::class)]
 class CommercialOffersItems
 {
     #[ORM\Id]
@@ -29,9 +32,7 @@ class CommercialOffersItems
     #[Groups(['offer:item:read'])]
     private ?BaseLicense $baseLicense = null;
 
-    #[ORM\ManyToOne]
-    #[Groups(['offer:item:read'])]
-    private ?AdditionalModule $additionalModule = null;
+
 
     #[ORM\Column]
     private int $quantity = 1;
@@ -44,8 +45,28 @@ class CommercialOffersItems
     #[Groups(['offer:item:read'])]
     private ?float $discount = null;
 
+    /**
+     * @var Collection<int, CommercialOffersItemModule>
+     */
+    #[ORM\OneToMany(targetEntity: CommercialOffersItemModule::class, mappedBy: 'item', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $commercialOffersItemModules;
 
 
+    public function __construct()
+    {
+        $this->commercialOffersItemModules = new ArrayCollection();
+        $this->additionalModules = new ArrayCollection();
+    }
+
+
+    public function addAdditionalModule(CommercialOffersItemModule $module): void {
+        $this->additionalModules->add($module);
+        $module->setItem($this);
+    }
+
+    public function getAdditionalModules(): Collection {
+        return $this->additionalModules;
+    }
 
     public function getId(): ?int
     {
@@ -87,16 +108,16 @@ class CommercialOffersItems
         return $this;
     }
 
-    public function getAdditionalModule(): ?AdditionalModule
-    {
-        return $this->additionalModule;
-    }
-
-    public function setAdditionalModule(?AdditionalModule $additionalModule): static
-    {
-        $this->additionalModule = $additionalModule;
-        return $this;
-    }
+//    public function getAdditionalModule(): ?AdditionalModule
+//    {
+//        return $this->additionalModule;
+//    }
+//
+//    public function setAdditionalModule(?AdditionalModule $additionalModule): static
+//    {
+//        $this->additionalModule = $additionalModule;
+//        return $this;
+//    }
 
     public function getQuantity(): int
     {
@@ -128,6 +149,36 @@ class CommercialOffersItems
     public function setDiscount(?float $discount): static
     {
         $this->discount = $discount;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CommercialOffersItemModule>
+     */
+    public function getCommercialOffersItemModules(): Collection
+    {
+        return $this->commercialOffersItemModules;
+    }
+
+    public function addCommercialOffersItemModule(CommercialOffersItemModule $module): self
+    {
+        if (!$this->commercialOffersItemModules->contains($module)) {
+            $this->commercialOffersItemModules[] = $module;
+            $module->setItem($this); // ✅ вот здесь замена метода
+        }
+
+        return $this;
+    }
+
+    public function removeCommercialOffersItemModule(CommercialOffersItemModule $commercialOffersItemModule): static
+    {
+        if ($this->commercialOffersItemModules->removeElement($commercialOffersItemModule)) {
+            // set the owning side to null (unless already changed)
+            if ($commercialOffersItemModule->getItem() === $this) {
+                $commercialOffersItemModule->setItem(null);
+            }
+        }
+
         return $this;
     }
 
