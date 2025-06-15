@@ -10,14 +10,20 @@ class CommercialOffersItemModule
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
-    private int $id;
+    #[ORM\Column]
+    private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'additionalModules')]
     private CommercialOffersItems $item;
 
     #[ORM\ManyToOne]
     private AdditionalModule $additionalModule;
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
 
     public function getItem(): CommercialOffersItems { return $this->item; }
     public function setItem(CommercialOffersItems $item): void { $this->item = $item; }

@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\AdditionalModule;
 use App\Entity\BaseLicense;
 use App\Entity\CommercialOffers;
+use App\Entity\CommercialOffersItemModule;
+use App\Entity\CommercialOffersItems;
 use App\Entity\Product;
 use App\Service\CommercialOfferService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -293,6 +295,24 @@ class CommercialOfferController extends AbstractController
                                             ]
                                         )
                                     ),
+                                    new OA\Property(
+                                        property: 'item_modules',
+                                        type: 'array',
+                                        items: new OA\Items(
+                                            properties: [
+                                                new OA\Property(property: 'id', type: 'integer'),
+                                                new OA\Property(
+                                                    property: 'module',
+                                                    type: 'object',
+                                                    properties: [
+                                                        new OA\Property(property: 'id', type: 'integer'),
+                                                        new OA\Property(property: 'name', type: 'string'),
+                                                        new OA\Property(property: 'price', type: 'number', format: 'float')
+                                                    ]
+                                                )
+                                            ]
+                                        )
+                                    ),
                                     new OA\Property(property: 'quantity', type: 'integer'),
                                     new OA\Property(property: 'price', type: 'number', format: 'float'),
                                     new OA\Property(property: 'discount', type: 'number', format: 'float', nullable: true),
@@ -312,20 +332,26 @@ class CommercialOfferController extends AbstractController
         $items = [];
         foreach ($offer->getCommercialOffersItems() as $item) {
             $modules = [];
+            $itemModules = [];
 
             // Получаем все связанные модули для этой лицензии
-            if ($item->getBaseLicense()) {
-                foreach ($item->getBaseLicense()->getLicenseCompositions() as $composition) {
-                    if ($composition->getAdditionalModule()) {
-                        $modules[] = [
-                            'id' => $composition->getAdditionalModule()->getId(),
-                            'name' => $composition->getAdditionalModule()->getNameModule(),
-                            'price' => $composition->getAdditionalModule()->getPurchasePrice(),
-                            'required' => $composition->isRequired(),
-                            'compatible' => $composition->isCompatible()
-                        ];
-                    }
-                }
+            foreach ($item->getAdditionalModules() as $module) {
+                $modules[] = [
+                    'id' => $module->getId(),
+                ];
+            }
+
+            // Получаем все CommercialOffersItemModule для этого item
+            foreach ($item->getCommercialOffersItemModules() as $itemModule) {
+                $additionalModule = $itemModule->getAdditionalModule();
+                $itemModules[] = [
+                    'id' => $itemModule->getId(),
+                    'module' => [
+                        'id' => $additionalModule->getId(),
+                        'name' => $additionalModule->getNameModule(),
+                        'price' => $additionalModule->getPurchasePrice(),
+                    ]
+                ];
             }
 
             $items[] = [
@@ -339,7 +365,8 @@ class CommercialOfferController extends AbstractController
                     'name' => $item->getBaseLicense()->getNameLicense(),
                     'price' => $item->getBaseLicense()->getPurchasePriceLicense(),
                 ] : null,
-                'additional_modules' => $modules,
+//                'additional_modules' => $modules,
+                'item_modules' => $itemModules,
                 'quantity' => $item->getQuantity(),
                 'price' => $item->getPrice(),
                 'discount' => $item->getDiscount(),
@@ -356,6 +383,191 @@ class CommercialOfferController extends AbstractController
             'items' => $items
         ]);
     }
+
+
+
+    #[Route('/items/{itemId}', name: 'commercial_offer_update_item', methods: ['PUT'])]
+    #[OA\Put(
+        path: '/api/commercial-offers/items/{itemId}',
+        summary: 'Обновить продукт в КП',
+        tags: ['Commercial Offer'],
+        parameters: [
+            new OA\Parameter(name: 'itemId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'product_id', type: 'integer', nullable: true),
+                    new OA\Property(property: 'base_license_id', type: 'integer', nullable: true),
+                    new OA\Property(
+                        property: 'item_modules',
+                        type: 'array',
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer', nullable: true),
+                                new OA\Property(property: 'module_id', type: 'integer'),
+                                new OA\Property(property: 'action', type: 'string', enum: ['add', 'remove'])
+                            ]
+                        ),
+                        nullable: true
+                    ),
+                    new OA\Property(property: 'quantity', type: 'integer', nullable: true),
+                    new OA\Property(property: 'discount', type: 'number', nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Продукт в КП обновлен',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer'),
+                        new OA\Property(
+                            property: 'product',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer'),
+                                new OA\Property(property: 'name', type: 'string')
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'base_license',
+                            type: 'object',
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer'),
+                                new OA\Property(property: 'name', type: 'string'),
+                                new OA\Property(property: 'price', type: 'number', format: 'float')
+                            ]
+                        ),
+                        new OA\Property(
+                            property: 'item_modules',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'id', type: 'integer'),
+                                    new OA\Property(
+                                        property: 'module',
+                                        type: 'object',
+                                        properties: [
+                                            new OA\Property(property: 'id', type: 'integer'),
+                                            new OA\Property(property: 'name', type: 'string'),
+                                            new OA\Property(property: 'price', type: 'number', format: 'float')
+                                        ]
+                                    )
+                                ]
+                            )
+                        ),
+                        new OA\Property(property: 'quantity', type: 'integer'),
+                        new OA\Property(property: 'price', type: 'number', format: 'float'),
+                        new OA\Property(property: 'discount', type: 'number', format: 'float', nullable: true),
+                        new OA\Property(property: 'total', type: 'number', format: 'float')
+                    ]
+                )
+            ),
+            new OA\Response(response: 404, description: 'КП или продукт не найден'),
+            new OA\Response(response: 400, description: 'Некорректные параметры'),
+            new OA\Response(response: 401, description: 'JWT Token not found or invalid')
+        ]
+    )]
+    public function updateItem(
+        int $itemId,
+        Request $request,
+        EntityManagerInterface $entityManager
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        /** @var CommercialOffersItems $item */
+        $item = $entityManager->getRepository(CommercialOffersItems::class)->find($itemId);
+        if (!$item) {
+            return $this->json(['error' => 'Item not found'], 404);
+        }
+
+        // Обновляем продукт, если указан
+        if (isset($data['product_id'])) {
+            $product = $entityManager->getRepository(Product::class)->find($data['product_id']);
+            if (!$product) {
+                return $this->json(['error' => 'Product not found'], 404);
+            }
+            $item->setProduct($product);
+        }
+
+        // Обновляем базовую лицензию
+        if (array_key_exists('base_license_id', $data)) {
+            $baseLicense = $data['base_license_id'] !== null ?
+                $entityManager->getRepository(BaseLicense::class)->find($data['base_license_id']) :
+                null;
+
+            if ($data['base_license_id'] !== null && !$baseLicense) {
+                return $this->json(['error' => 'Base license not found'], 404);
+            }
+            $item->setBaseLicense($baseLicense);
+        }
+
+        // Обновляем модули
+        if (!empty($data['item_modules']) && is_array($data['item_modules'])) {
+            foreach ($data['item_modules'] as $moduleData) {
+                $module = $entityManager->getRepository(AdditionalModule::class)->find($moduleData['module_id']);
+                if (!$module) {
+                    continue; // или вернуть ошибку
+                }
+
+                if ($moduleData['action'] === 'add') {
+                    // Проверяем, нет ли уже такого модуля
+                    $exists = false;
+                    foreach ($item->getCommercialOffersItemModules() as $existingModule) {
+                        if ($existingModule->getAdditionalModule()->getId() === $module->getId()) {
+                            $exists = true;
+                            break;
+                        }
+                    }
+
+                    if (!$exists) {
+                        $itemModule = new CommercialOffersItemModule();
+                        $itemModule->setItem($item);
+                        $itemModule->setAdditionalModule($module);
+                        $entityManager->persist($itemModule);
+                        $item->addCommercialOffersItemModule($itemModule);
+                    }
+                } elseif ($moduleData['action'] === 'remove') {
+                    // Удаляем модуль по ID или по module_id
+                    foreach ($item->getCommercialOffersItemModules() as $existingModule) {
+                        if (
+                            (isset($moduleData['id']) && $existingModule->getId() === $moduleData['id']) ||
+                            $existingModule->getAdditionalModule()->getId() === $moduleData['module_id']
+                        ) {
+                            $entityManager->remove($existingModule);
+                            $item->removeCommercialOffersItemModule($existingModule);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Обновляем количество
+        if (isset($data['quantity'])) {
+            $item->setQuantity($data['quantity']);
+        }
+
+        // Обновляем скидку
+        if (array_key_exists('discount', $data)) {
+            $item->setDiscount($data['discount']);
+        }
+
+        // Пересчитываем цену
+        $this->commercialOfferService->updateItemPrice($item);
+        $entityManager->flush();
+
+        // Пересчитываем общую стоимость КП
+        $this->commercialOfferService->recalculateTotalPrice($item->getCommercialOfferId());
+
+        return $this->json($item, 200, [], ['groups' => ['offer:item:read']]);
+    }
+
+
 
     #[Route('/{id}/compatible-modules/{baseLicenseId}', name: 'commercial_offer_compatible_modules', methods: ['GET'])]
     #[OA\Get(

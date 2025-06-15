@@ -33,7 +33,6 @@ class CommercialOffersItems
     private ?BaseLicense $baseLicense = null;
 
 
-
     #[ORM\Column]
     private int $quantity = 1;
 
@@ -60,12 +59,14 @@ class CommercialOffersItems
 
 
     public function addAdditionalModule(CommercialOffersItemModule $module): void {
-        $this->additionalModules->add($module);
-        $module->setItem($this);
+        if (!$this->commercialOffersItemModules->contains($module)) {
+            $this->commercialOffersItemModules->add($module);
+            $module->setItem($this);
+        }
     }
 
     public function getAdditionalModules(): Collection {
-        return $this->additionalModules;
+        return $this->commercialOffersItemModules;
     }
 
     public function getId(): ?int

@@ -117,7 +117,7 @@ class CommercialOfferService
         return $itemModuleIds === $inputModuleIds;
     }
 
-    private function updateItemPrice(CommercialOffersItems $item): void
+    public function updateItemPrice(CommercialOffersItems $item): void
     {
         $price = 0;
 
@@ -160,7 +160,7 @@ class CommercialOfferService
         return $maxDiscount;
     }
 
-    private function recalculateTotalPrice(CommercialOffers $offer): void
+    public function recalculateTotalPrice(CommercialOffers $offer): void
     {
         $total = 0;
         foreach ($offer->getCommercialOffersItems() as $item) {
