@@ -165,6 +165,7 @@ class CommercialOfferController extends AbstractController
                 ->findBy(['id' => $data['additional_module_ids']]);
         }
 
+
         $quantity = 1; // всегда 1, поле не принимается от клиента
 
         $item = $this->commercialOfferService->addProductToOffer(
@@ -185,6 +186,29 @@ class CommercialOfferController extends AbstractController
         path: '/api/commercial-offers',
         summary: 'Получить список всех коммерческих предложений',
         tags: ['Commercial Offer'],
+        parameters: [
+            new OA\Parameter(
+                name: 'search',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string'),
+                description: 'Поиск по ID КП'
+            ),
+            new OA\Parameter(
+                name: 'sort',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'string', enum: ['created_at_asc', 'created_at_desc', 'total_price_asc', 'total_price_desc']),
+                description: 'Поле и направление сортировки'
+            ),
+            new OA\Parameter(
+                name: 'status',
+                in: 'query',
+                required: false,
+                schema: new OA\Schema(type: 'boolean'),
+                description: 'Фильтр по статусу'
+            )
+        ],
         responses: [
             new OA\Response(
                 response: 200,
@@ -210,19 +234,48 @@ class CommercialOfferController extends AbstractController
             new OA\Response(response: 401, description: 'JWT Token not found or invalid')
         ]
     )]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
         $user = $this->getUser();
+        $search = $request->query->get('search');
+        $sort = $request->query->get('sort', 'created_at_desc');
+        $status = $request->query->get('status');
 
-        $offers = $this->entityManager->createQueryBuilder()
+        $qb = $this->entityManager->createQueryBuilder()
             ->select('co')
             ->from(CommercialOffers::class, 'co')
             ->innerJoin('co.userId', 'u')
             ->where('u = :user')
-            ->setParameter('user', $user)
-            ->orderBy('co.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->setParameter('user', $user);
+
+        // Поиск по ID КП
+        if ($search) {
+            $qb->andWhere('co.id = :search')
+                ->setParameter('search', (int)$search);
+        }
+
+        // Фильтр по статусу
+        if ($status !== null) {
+            $qb->andWhere('co.status = :status')
+                ->setParameter('status', filter_var($status, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        // Сортировка
+        switch ($sort) {
+            case 'created_at_asc':
+                $qb->orderBy('co.createdAt', 'ASC');
+                break;
+            case 'total_price_asc':
+                $qb->orderBy('co.totalPrice', 'ASC');
+                break;
+            case 'total_price_desc':
+                $qb->orderBy('co.totalPrice', 'DESC');
+                break;
+            default: // created_at_desc
+                $qb->orderBy('co.createdAt', 'DESC');
+        }
+
+        $offers = $qb->getQuery()->getResult();
 
         $result = [];
         foreach ($offers as $offer) {

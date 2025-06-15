@@ -41,49 +41,32 @@ class CommercialOfferService
         CommercialOffers $offer,
         Product $product,
         ?BaseLicense $baseLicense = null,
-        array $additionalModules = [],  // массив объектов AdditionalModule
+        array $additionalModules = [],
         int $quantity = 1
     ): CommercialOffersItems {
-        // Проверяем, есть ли уже такой продукт в предложении (логика в findExistingItem должна быть обновлена для новой связи)
-        $existingItem = $this->findExistingItem($offer, $product, $baseLicense, $additionalModules);
-
-        if ($existingItem) {
-            $existingItem->setQuantity($existingItem->getQuantity() + $quantity);
-            $this->updateItemPrice($existingItem);
-            $this->entityManager->flush();
-            return $existingItem;
-        }
-
         $item = new CommercialOffersItems();
         $item->setCommercialOfferId($offer);
         $item->setProduct($product);
         $item->setBaseLicense($baseLicense);
         $item->setQuantity($quantity);
 
-        // Добавляем дополнительные модули через промежуточную сущность
+        // Добавляем все указанные модули
         foreach ($additionalModules as $module) {
             $itemModule = new CommercialOffersItemModule();
             $itemModule->setItem($item);
             $itemModule->setAdditionalModule($module);
-
-            // Добавляем связь с item
             $item->addCommercialOffersItemModule($itemModule);
-
-            // Сохраняем промежуточную сущность
             $this->entityManager->persist($itemModule);
         }
 
         $this->updateItemPrice($item);
         $offer->addCommercialOffersItem($item);
-
         $this->entityManager->persist($item);
         $this->entityManager->flush();
-
         $this->recalculateTotalPrice($offer);
 
         return $item;
     }
-
 
     private function findExistingItem(
         CommercialOffers $offer,
@@ -92,13 +75,34 @@ class CommercialOfferService
         array $additionalModules = []
     ): ?CommercialOffersItems {
         foreach ($offer->getCommercialOffersItems() as $item) {
-            if (
-                $item->getProduct() === $product &&
-                $item->getBaseLicense() === $baseLicense
-            ) {
+            // Проверяем совпадение продукта и лицензии
+            if ($item->getProduct() !== $product || $item->getBaseLicense() !== $baseLicense) {
+                continue;
+            }
+
+            // Получаем ID модулей текущего элемента
+            $existingModuleIds = [];
+            foreach ($item->getCommercialOffersItemModules() as $itemModule) {
+                $existingModuleIds[] = $itemModule->getAdditionalModule()->getId();
+            }
+
+
+            // Получаем ID запрашиваемых модулей
+            $requestedModuleIds = [];
+            foreach ($additionalModules as $module) {
+                $requestedModuleIds[] = $module->getId();
+            }
+
+            // Сортируем массивы для сравнения
+            sort($existingModuleIds);
+            sort($requestedModuleIds);
+
+            // Если модули совпадают - возвращаем элемент
+            if ($existingModuleIds === $requestedModuleIds) {
                 return $item;
             }
         }
+
         return null;
     }
 

@@ -154,6 +154,7 @@ class LicenseCompositionController extends AbstractController
             new OA\Response(response: 401, description: 'JWT Token not found or invalid')
         ]
     )]
+    #[Route('/{id}', name: 'license_composition_get', methods: ['GET'])]
     public function get(int $id): JsonResponse
     {
         // Получаем базовую лицензию
@@ -175,6 +176,8 @@ class LicenseCompositionController extends AbstractController
         ];
 
         foreach ($compositions as $composition) {
+            $additionalModule = $composition->getAdditionalModule();
+
             $relation = 'не сочетается';
             if ($composition->isRequired()) {
                 $relation = 'входит';
@@ -183,18 +186,14 @@ class LicenseCompositionController extends AbstractController
             }
 
             $response['additional_modules'][] = [
-                'id' => $composition->getId(),
-                'name' => $composition->getAdditionalModule()->getNameModule(),
+                'id' => $additionalModule->getId(), // Используем ID модуля, а не связи
+                'name' => $additionalModule->getNameModule(),
+                'price' => $additionalModule->getOfferPrice(),
                 'relation' => $relation
             ];
         }
 
-        return new JsonResponse(
-            $this->serializer->serialize($response, 'json'),
-            200,
-            [],
-            true
-        );
+        return $this->json($response);
     }
 
     #[Route('/{id}', name: 'license_composition_update', methods: ['PUT'])]
